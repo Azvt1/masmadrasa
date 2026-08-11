@@ -29,7 +29,8 @@ export default async function StudentLibraryPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
-  function FileCard({ file }: { file: (typeof files)[0] }) {
+  type LibraryFile = NonNullable<typeof files>[number]
+  function FileCard({ file }: { file: LibraryFile }) {
     const cfg = TYPE_CONFIG[file.file_type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.pdf
     const Icon = cfg.icon
     const size = formatBytes(file.file_size)

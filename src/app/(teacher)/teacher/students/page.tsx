@@ -109,7 +109,7 @@ export default async function TeacherStudentsPage() {
   const iqra  = students.filter(s => s.student_type === 'iqra')
   const quran = students.filter(s => s.student_type === 'quran')
 
-  const StudentCard = ({ s }: { s: typeof students[0] }) => (
+  const StudentCard = ({ s }: { s: typeof students[number] }) => (
     <div className={`bg-white border rounded-lg p-4 space-y-4 ${s.ready_to_advance ? 'border-amber-200' : 'border-slate-200'}`}>
       <div className="flex items-start justify-between gap-2">
         <div>

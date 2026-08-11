@@ -51,7 +51,7 @@ export default async function TeacherProgressPage() {
   const iqra  = students.filter(s => s.student_type === 'iqra')
   const quran = students.filter(s => s.student_type === 'quran')
 
-  function progressSummary(s: (typeof students)[0]) {
+  function progressSummary(s: typeof students[number]) {
     if (!s.progress) return 'Not started'
     if (s.student_type === 'iqra') {
       const p = s.progress as any
