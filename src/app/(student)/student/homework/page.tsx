@@ -34,7 +34,8 @@ export default async function StudentHomeworkPage() {
   const pending   = (assignments ?? []).filter(a => !a.is_completed)
   const completed = (assignments ?? []).filter(a => a.is_completed)
 
-  function HomeworkCard({ a, done }: { a: typeof assignments[0]; done: boolean }) {
+  type Assignment = NonNullable<typeof assignments>[number]
+  function HomeworkCard({ a, done }: { a: Assignment; done: boolean }) {
     const hw = a.homework as { id: string; title: string; instructions: string | null; due_date: string | null; book_reference: string | null }
     const isOverdue = hw.due_date && isPast(parseISO(hw.due_date)) && !done
 
