@@ -53,7 +53,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{background: 'radial-gradient(ellipse at 50% 30%, #0d2818 0%, #0a1f12 35%, #071510 65%, #050f0a 100%)'}}>
       <style>{`
         @keyframes glow-pulse {
           0%, 100% { filter: drop-shadow(0 0 18px #4ade80aa) drop-shadow(0 0 40px #22c55e55); }
@@ -63,7 +63,7 @@ export default function LoginPage() {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .logo-glow { animation: glow-pulse 3s ease-in-out infinite; }
+        .logo-glow { animation: glow-pulse 3s ease-in-out infinite; mix-blend-mode: screen; }
         .fade-up   { animation: fade-up 0.7s ease-out forwards; }
         .fade-up-delay { animation: fade-up 0.7s ease-out 0.25s both; }
       `}</style>
