@@ -1,36 +1,36 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, CalendarCheck, BookOpen, TrendingUp, BarChart2, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarCheck, BookOpen, TrendingUp, BarChart2, Settings, LogOut, Menu, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types/app.types'
 
-interface TeacherSidebarProps {
-  profile: Profile
-}
+interface TeacherSidebarProps { profile: Profile }
 
 const navItems = [
-  { href: '/teacher/dashboard',  label: 'Dashboard',  icon: LayoutDashboard, active: true },
-  { href: '/teacher/students',   label: 'Students',   icon: Users,           active: true },
-  { href: '/teacher/attendance', label: 'Attendance', icon: CalendarCheck,   active: true },
-  { href: '/teacher/homework',   label: 'Homework',   icon: BookOpen,        active: true },
-  { href: '/teacher/progress',   label: 'Progress',   icon: TrendingUp,      active: true },
-  { href: '/teacher/analytics',  label: 'Analytics',  icon: BarChart2,       active: true },
-  { href: '/teacher/settings',   label: 'Settings',   icon: Settings,        active: true },
+  { href: '/teacher/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+  { href: '/teacher/students',   label: 'Students',   icon: Users           },
+  { href: '/teacher/attendance', label: 'Attendance', icon: CalendarCheck   },
+  { href: '/teacher/homework',   label: 'Homework',   icon: BookOpen        },
+  { href: '/teacher/progress',   label: 'Progress',   icon: TrendingUp      },
+  { href: '/teacher/analytics',  label: 'Analytics',  icon: BarChart2       },
+  { href: '/teacher/settings',   label: 'Settings',   icon: Settings        },
 ]
 
 export default function TeacherSidebar({ profile }: TeacherSidebarProps) {
-  const pathname = usePathname()
-  const supabase = createClient()
+  const pathname  = usePathname()
+  const supabase  = createClient()
+  const [open, setOpen] = useState(false)
 
   async function handleLogout() {
     await supabase.auth.signOut()
     window.location.href = '/login'
   }
 
-  return (
-    <aside className="w-56 shrink-0 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0">
+  const SidebarContent = () => (
+    <>
       {/* Brand */}
       <div className="px-4 py-5 border-b border-slate-200">
         <div className="flex items-center gap-2">
@@ -42,26 +42,21 @@ export default function TeacherSidebar({ profile }: TeacherSidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5">
-        {navItems.map(({ href, label, icon: Icon, active: isBuilt }) => {
-          const isCurrent = pathname === href || pathname.startsWith(href + '/')
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={href}
-              href={isBuilt ? href : '#'}
+              href={href}
+              onClick={() => setOpen(false)}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                !isBuilt
-                  ? 'text-slate-300 cursor-not-allowed'
-                  : isCurrent
+                active
                   ? 'bg-teal-50 text-teal-700 font-medium'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
-              onClick={e => !isBuilt && e.preventDefault()}
             >
               <Icon size={15} />
               <span>{label}</span>
-              {!isBuilt && (
-                <span className="ml-auto text-[10px] text-slate-300 font-medium">Soon</span>
-              )}
             </Link>
           )
         })}
@@ -81,6 +76,45 @@ export default function TeacherSidebar({ profile }: TeacherSidebarProps) {
           Sign out
         </button>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile top header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white border-b border-slate-200 flex items-center px-4 gap-3">
+        <button onClick={() => setOpen(true)} className="text-slate-600 hover:text-slate-900">
+          <Menu size={20} />
+        </button>
+        <span className="text-teal-600 select-none">☽</span>
+        <span className="font-semibold text-slate-900 text-sm">Quran Madrasa</span>
+      </div>
+
+      {/* Mobile backdrop */}
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/40"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — drawer on mobile, static on desktop */}
+      <aside className={`
+        fixed md:static inset-y-0 left-0 z-50 w-56 shrink-0
+        bg-white border-r border-slate-200 flex flex-col h-screen
+        transform transition-transform duration-200 ease-in-out
+        md:translate-x-0
+        ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        {/* Mobile close button */}
+        <button
+          onClick={() => setOpen(false)}
+          className="md:hidden absolute top-3 right-3 text-slate-400 hover:text-slate-600"
+        >
+          <X size={18} />
+        </button>
+        <SidebarContent />
+      </aside>
+    </>
   )
 }
