@@ -36,7 +36,7 @@ export default async function StudentHomeworkPage() {
 
   type Assignment = NonNullable<typeof assignments>[number]
   function HomeworkCard({ a, done }: { a: Assignment; done: boolean }) {
-    const hw = a.homework as { id: string; title: string; instructions: string | null; due_date: string | null; book_reference: string | null }
+    const hw = (Array.isArray(a.homework) ? a.homework[0] : a.homework) as unknown as { id: string; title: string; instructions: string | null; due_date: string | null; book_reference: string | null }
     const isOverdue = hw.due_date && isPast(parseISO(hw.due_date)) && !done
 
     return (
