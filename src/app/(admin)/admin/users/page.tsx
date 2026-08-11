@@ -94,8 +94,8 @@ export default async function UsersPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {students?.map(s => {
-                const profile = s.profile as { full_name: string; phone: string | null; created_at: string } | null
-                const teacher = s.teacher as { full_name: string } | null
+                const profile = (Array.isArray(s.profile) ? s.profile[0] : s.profile) as { full_name: string; phone: string | null; created_at: string } | null
+                const teacher = (Array.isArray(s.teacher) ? s.teacher[0] : s.teacher) as { full_name: string } | null
                 return (
                   <tr key={s.id} className="hover:bg-slate-50/50">
                     <td className="px-4 py-3 font-medium text-slate-900">{profile?.full_name ?? '—'}</td>
