@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Eye, EyeOff } from 'lucide-react'
 import type { UserRole } from '@/lib/types/app.types'
 
@@ -52,80 +53,104 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+      <style>{`
+        @keyframes glow-pulse {
+          0%, 100% { filter: drop-shadow(0 0 18px #4ade80aa) drop-shadow(0 0 40px #22c55e55); }
+          50%       { filter: drop-shadow(0 0 32px #4ade80ee) drop-shadow(0 0 70px #22c55e99); }
+        }
+        @keyframes fade-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .logo-glow { animation: glow-pulse 3s ease-in-out infinite; }
+        .fade-up   { animation: fade-up 0.7s ease-out forwards; }
+        .fade-up-delay { animation: fade-up 0.7s ease-out 0.25s both; }
+      `}</style>
       <div className="w-full max-w-sm">
 
-        {/* Header */}
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-teal-600 text-white text-xl mb-4 select-none">
-            ☽
+          <div className="logo-glow inline-block mb-2">
+            <Image
+              src="/logo.png"
+              alt="Masjid As-Salaam"
+              width={140}
+              height={140}
+              className="mx-auto"
+              priority
+            />
           </div>
-          <h1 className="text-2xl font-semibold text-slate-900">Quran Madrasa</h1>
-          <p className="text-slate-500 text-sm mt-1">Sign in to continue</p>
+          <p className="text-green-400/70 text-xs tracking-widest uppercase fade-up-delay">
+            Madrasah Portal
+          </p>
         </div>
 
         {/* Form */}
-        <Card>
-          <CardContent className="pt-6">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
+        <div className="fade-up bg-zinc-900 border border-zinc-700 rounded-xl p-6 shadow-2xl">
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-zinc-300">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                disabled={loading}
+                className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-500 focus:border-green-500 focus:ring-green-500/20"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-zinc-300">Password</Label>
+              <div className="relative">
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                   required
-                  autoComplete="email"
+                  autoComplete="current-password"
                   disabled={loading}
+                  className="pr-10 bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-500 focus:border-green-500 focus:ring-green-500/20"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    disabled={loading}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    tabIndex={-1}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-md">
-                  {error}
-                </p>
-              )}
-
-              <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700" disabled={loading}>
-                {loading ? 'Signing in…' : 'Sign in'}
-              </Button>
-
-              <p className="text-center text-sm text-slate-500">
-                <Link href="/auth/forgot-password" className="text-teal-600 hover:underline">
-                  Forgot password?
-                </Link>
+            {error && (
+              <p className="text-sm text-red-400 bg-red-950/50 border border-red-800 px-3 py-2 rounded-md">
+                {error}
               </p>
-            </form>
-          </CardContent>
-        </Card>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium shadow-lg shadow-green-900/40"
+              disabled={loading}
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </Button>
+
+            <p className="text-center text-sm text-zinc-500">
+              <Link href="/auth/forgot-password" className="text-green-400 hover:text-green-300 hover:underline">
+                Forgot password?
+              </Link>
+            </p>
+          </form>
+        </div>
 
       </div>
     </div>
