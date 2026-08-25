@@ -40,7 +40,7 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-0.5">
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
@@ -100,7 +100,7 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
       {/* Sidebar — drawer on mobile, static on desktop */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50 w-56 shrink-0
-        bg-white border-r border-slate-200 flex flex-col h-screen
+        bg-white border-r border-slate-200 flex flex-col h-screen h-dvh
         transform transition-transform duration-200 ease-in-out
         md:translate-x-0
         ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
