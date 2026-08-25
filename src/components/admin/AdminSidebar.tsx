@@ -62,7 +62,7 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
       </nav>
 
       {/* User + Logout */}
-      <div className="p-3 border-t border-slate-200">
+      <div className="p-3 border-t border-slate-200" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="px-3 py-2">
           <p className="text-sm font-medium text-slate-900 truncate">{profile.full_name}</p>
           <p className="text-xs text-slate-400">Administrator</p>
@@ -100,7 +100,7 @@ export default function AdminSidebar({ profile }: AdminSidebarProps) {
       {/* Sidebar — drawer on mobile, static on desktop */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50 w-56 shrink-0
-        bg-white border-r border-slate-200 flex flex-col h-screen h-dvh
+        bg-white border-r border-slate-200 flex flex-col
         transform transition-transform duration-200 ease-in-out
         md:translate-x-0
         ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
