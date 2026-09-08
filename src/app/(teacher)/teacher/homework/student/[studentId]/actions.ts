@@ -19,3 +19,33 @@ export async function toggleCompletionAction(formData: FormData) {
 
   revalidatePath(`/teacher/homework/student/${studentId}`)
 }
+
+interface SaveFeedbackArgs {
+  assignmentId: string
+  studentId: string
+  isCompleted: boolean
+  behaviorSatisfactory: boolean
+  teacherFeedback: string | null
+}
+
+export async function saveFeedbackAction({
+  assignmentId,
+  studentId,
+  isCompleted,
+  behaviorSatisfactory,
+  teacherFeedback,
+}: SaveFeedbackArgs) {
+  const supabase = await createClient()
+
+  await supabase
+    .from('homework_assignments')
+    .update({
+      is_completed:           isCompleted,
+      completed_at:           isCompleted ? new Date().toISOString() : null,
+      behavior_satisfactory:  behaviorSatisfactory,
+      teacher_feedback:       teacherFeedback,
+    })
+    .eq('id', assignmentId)
+
+  revalidatePath(`/teacher/homework/student/${studentId}`)
+}

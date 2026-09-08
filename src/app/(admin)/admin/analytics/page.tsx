@@ -218,24 +218,26 @@ export default async function AdminAnalyticsPage() {
           ) : (
             studentRows
               .filter(s => s.hwTotal > 0)
-              .sort((a, b) => (b.hwDone / b.hwTotal) - (a.hwDone / a.hwTotal))
+              .sort((a, b) => (a.hwDone / a.hwTotal) - (b.hwDone / b.hwTotal))
               .map(s => {
-                const rate = Math.round((s.hwDone / s.hwTotal) * 100)
+                const rate      = Math.round((s.hwDone / s.hwTotal) * 100)
+                const hwAtRisk  = s.hwTotal >= 3 && rate < 80
                 return (
-                  <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div key={s.id} className={`flex items-center gap-3 px-4 py-2.5 ${hwAtRisk ? 'bg-red-50/40' : ''}`}>
                     <div className="w-36 shrink-0">
-                      <p className="text-xs font-medium text-slate-900 truncate">{s.name}</p>
+                      <p className={`text-xs font-medium truncate ${hwAtRisk ? 'text-red-700' : 'text-slate-900'}`}>{s.name}</p>
                       <p className="text-[10px] text-slate-400">{s.hwDone}/{s.hwTotal} completed</p>
                     </div>
                     <div className="flex items-center gap-2 flex-1">
                       <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${rate >= 80 ? 'bg-teal-500' : rate >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
+                          className={`h-full rounded-full ${hwAtRisk ? 'bg-red-400' : rate >= 80 ? 'bg-teal-500' : 'bg-amber-400'}`}
                           style={{ width: `${rate}%` }}
                         />
                       </div>
-                      <span className="text-xs font-semibold tabular-nums w-9 text-right text-slate-700">{rate}%</span>
+                      <span className={`text-xs font-semibold tabular-nums w-9 text-right ${hwAtRisk ? 'text-red-600' : 'text-slate-700'}`}>{rate}%</span>
                     </div>
+                    {hwAtRisk && <AlertTriangle size={13} className="text-red-400 shrink-0" />}
                   </div>
                 )
               })

@@ -6,7 +6,7 @@ import { saveAttendanceAction, type AttendanceRecord } from './actions'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2 } from 'lucide-react'
 
-type Status = 'present' | 'late' | 'absent' | 'excused'
+type Status = 'present' | 'late' | 'absent'
 
 interface Student {
   id: string
@@ -28,9 +28,8 @@ interface Props {
 
 const STATUS_OPTIONS: { value: Status; label: string; color: string; active: string }[] = [
   { value: 'present',  label: 'Present',  color: 'border-slate-200 text-slate-600', active: 'border-teal-400 bg-teal-50 text-teal-700' },
-  { value: 'late',     label: 'Late',     color: 'border-slate-200 text-slate-600', active: 'border-amber-400 bg-amber-50 text-amber-700' },
-  { value: 'absent',   label: 'Absent',   color: 'border-slate-200 text-slate-600', active: 'border-red-300 bg-red-50 text-red-600' },
-  { value: 'excused',  label: 'Excused',  color: 'border-slate-200 text-slate-600', active: 'border-blue-300 bg-blue-50 text-blue-600' },
+  { value: 'late',   label: 'Late',   color: 'border-slate-200 text-slate-600', active: 'border-amber-400 bg-amber-50 text-amber-700' },
+  { value: 'absent', label: 'Absent', color: 'border-slate-200 text-slate-600', active: 'border-red-300 bg-red-50 text-red-600' },
 ]
 
 export default function AttendanceForm({ sessionId, students, existing }: Props) {
@@ -95,27 +94,26 @@ export default function AttendanceForm({ sessionId, students, existing }: Props)
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100">
         {students.map(student => (
           <div key={student.id} className="px-4 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">{student.full_name}</p>
-                <p className="text-xs text-slate-400 capitalize mt-0.5">{student.student_type}</p>
-              </div>
+            {/* Name row */}
+            <div className="mb-2">
+              <p className="text-sm font-medium text-slate-900">{student.full_name}</p>
+              <p className="text-xs text-slate-400 capitalize mt-0.5">{student.student_type}</p>
+            </div>
 
-              {/* Status buttons */}
-              <div className="flex gap-1.5 shrink-0">
-                {STATUS_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setStatus(student.id, opt.value)}
-                    className={`px-2.5 py-1 rounded-md border text-xs font-medium transition-colors ${
-                      statuses[student.id] === opt.value ? opt.active : opt.color + ' hover:bg-slate-50'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+            {/* Status buttons — wrap freely on mobile */}
+            <div className="flex gap-1.5 flex-wrap">
+              {STATUS_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setStatus(student.id, opt.value)}
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                    statuses[student.id] === opt.value ? opt.active : opt.color + ' hover:bg-slate-50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
 
             {/* Notes — only show when a status is selected */}

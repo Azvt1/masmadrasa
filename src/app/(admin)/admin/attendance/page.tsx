@@ -72,7 +72,7 @@ export default async function AdminAttendancePage() {
       name:           profileMap.get(s.profile_id) ?? '—',
       teacherName:    profileMap.get(s.teacher_id)  ?? '—',
       studentType:    s.student_type,
-      present: 0, late: 0, absent: 0, excused: 0,
+      present: 0, late: 0, absent: 0,
       attendanceRate: pastSessions.length === 0 ? 100 : 0,
     })
   }
@@ -80,7 +80,7 @@ export default async function AdminAttendancePage() {
   for (const r of records ?? []) {
     const s = statsMap.get(r.student_id)
     if (!s) continue
-    s[r.status as 'present' | 'late' | 'absent' | 'excused']++
+    s[r.status as 'present' | 'late' | 'absent']++
   }
 
   for (const s of statsMap.values()) {
@@ -94,11 +94,11 @@ export default async function AdminAttendancePage() {
   )
 
   // ── Build session rows ────────────────────────────────────────────────────
-  type StatusMap = { present: number; late: number; absent: number; excused: number }
+  type StatusMap = { present: number; late: number; absent: number }
   const sessionStatsMap = new Map<string, StatusMap>()
   for (const r of records ?? []) {
     if (!sessionStatsMap.has(r.session_id)) {
-      sessionStatsMap.set(r.session_id, { present: 0, late: 0, absent: 0, excused: 0 })
+      sessionStatsMap.set(r.session_id, { present: 0, late: 0, absent: 0 })
     }
     sessionStatsMap.get(r.session_id)![r.status as keyof StatusMap]++
   }
@@ -112,7 +112,6 @@ export default async function AdminAttendancePage() {
       present:      stats?.present  ?? 0,
       late:         stats?.late     ?? 0,
       absent:       stats?.absent   ?? 0,
-      excused:      stats?.excused  ?? 0,
       isPast:       !isAfter(parseISO(s.session_date), today),
     }
   })

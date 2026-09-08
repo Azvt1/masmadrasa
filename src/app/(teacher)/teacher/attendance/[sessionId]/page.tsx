@@ -96,7 +96,7 @@ export default async function AttendanceSessionPage({ params }: Props) {
         <AttendanceForm
           sessionId={sessionId}
           students={students}
-          existing={(existing ?? []) as { student_id: string; status: 'present' | 'late' | 'absent' | 'excused'; notes: string | null }[]}
+          existing={(existing ?? []) as { student_id: string; status: 'present' | 'late' | 'absent'; notes: string | null }[]}
         />
       )}
     </div>

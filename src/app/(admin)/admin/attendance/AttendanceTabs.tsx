@@ -12,7 +12,6 @@ export interface StudentStat {
   present: number
   late: number
   absent: number
-  excused: number
   attendanceRate: number
 }
 
@@ -23,7 +22,6 @@ export interface SessionRow {
   present: number
   late: number
   absent: number
-  excused: number
   isPast: boolean
 }
 
@@ -105,7 +103,6 @@ export default function AttendanceTabs({
                     <th className="text-center px-3 py-2.5 text-xs font-medium text-teal-600">Present</th>
                     <th className="text-center px-3 py-2.5 text-xs font-medium text-amber-500">Late</th>
                     <th className="text-center px-3 py-2.5 text-xs font-medium text-red-500">Absent</th>
-                    <th className="text-center px-3 py-2.5 text-xs font-medium text-blue-500">Excused</th>
                     <th className="text-right px-4 py-2.5 text-xs font-medium text-slate-500">Attendance</th>
                   </tr>
                 </thead>
@@ -123,7 +120,6 @@ export default function AttendanceTabs({
                         <td className="text-center px-3 py-3 text-teal-700 font-medium">{s.present}</td>
                         <td className="text-center px-3 py-3 text-amber-600 font-medium">{s.late}</td>
                         <td className="text-center px-3 py-3 text-red-500 font-medium">{s.absent}</td>
-                        <td className="text-center px-3 py-3 text-blue-500 font-medium">{s.excused}</td>
                         <td className="text-right px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
                             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -165,13 +161,12 @@ export default function AttendanceTabs({
                       <th className="text-center px-3 py-2.5 text-xs font-medium text-teal-600">Present</th>
                       <th className="text-center px-3 py-2.5 text-xs font-medium text-amber-500">Late</th>
                       <th className="text-center px-3 py-2.5 text-xs font-medium text-red-500">Absent</th>
-                      <th className="text-center px-3 py-2.5 text-xs font-medium text-blue-500">Excused</th>
                       <th className="text-right px-4 py-2.5 text-xs font-medium text-slate-500">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {monthSessions.map(session => {
-                      const totalMarked = session.present + session.late + session.absent + session.excused
+                      const totalMarked = session.present + session.late + session.absent
                       return (
                         <tr key={session.id} className="hover:bg-slate-50/50">
                           <td className="px-4 py-3">
@@ -181,7 +176,6 @@ export default function AttendanceTabs({
                           <td className="text-center px-3 py-3 text-teal-700 font-medium">{session.present || '—'}</td>
                           <td className="text-center px-3 py-3 text-amber-600 font-medium">{session.late || '—'}</td>
                           <td className="text-center px-3 py-3 text-red-500 font-medium">{session.absent || '—'}</td>
-                          <td className="text-center px-3 py-3 text-blue-500 font-medium">{session.excused || '—'}</td>
                           <td className="text-right px-4 py-3">
                             {totalMarked >= totalStudents && totalStudents > 0 ? (
                               <span className="inline-flex items-center gap-1 text-xs text-teal-600 font-medium">

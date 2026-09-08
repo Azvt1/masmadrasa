@@ -5,7 +5,7 @@
 
 export type UserRole          = 'admin' | 'teacher' | 'student'
 export type StudentType       = 'iqra' | 'quran'
-export type AttendanceStatus  = 'present' | 'late' | 'absent' | 'excused'
+export type AttendanceStatus  = 'present' | 'late' | 'absent'
 export type ClassDay          = 'tuesday' | 'thursday'
 export type FileType          = 'pdf' | 'audio' | 'image'
 export type InvitationChannel = 'manual' | 'link' | 'whatsapp'

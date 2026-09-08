@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 
 export interface AttendanceRecord {
   studentId: string
-  status: 'present' | 'late' | 'absent' | 'excused'
+  status: 'present' | 'late' | 'absent'
   notes?: string
 }
 

@@ -16,6 +16,7 @@ export async function createHomeworkAction(
   const instructions  = (formData.get('instructions') as string | null)?.trim() || null
   const due_date      = (formData.get('due_date') as string | null) || null
   const book_reference = (formData.get('book_reference') as string | null)?.trim() || null
+  const surah_number  = formData.get('surah_number') ? parseInt(formData.get('surah_number') as string) : null
 
   if (!title) return { error: 'Title is required.' }
 
@@ -31,7 +32,7 @@ export async function createHomeworkAction(
 
   const { data: hw, error: hwError } = await supabase
     .from('homework')
-    .insert({ teacher_id: user.id, title, instructions, due_date, book_reference })
+    .insert({ teacher_id: user.id, title, instructions, due_date, book_reference, surah_number })
     .select('id')
     .single()
 

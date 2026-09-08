@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO, startOfDay } from 'date-fns'
 import { buttonVariants } from '@/components/ui/button'
-import { ArrowLeft, Plus, CheckCircle2 } from 'lucide-react'
-import { toggleCompletionAction } from './actions'
+import { ArrowLeft, Plus } from 'lucide-react'
+import HomeworkFeedbackForm from './HomeworkFeedbackForm'
 
 export default async function StudentHomeworkPage({
   params,
@@ -36,10 +36,10 @@ export default async function StudentHomeworkPage({
     .single()
   const studentName = profile?.full_name ?? '—'
 
-  // All assignments for this student, newest first
+  // All assignments — include feedback columns
   const { data: assignments } = await supabase
     .from('homework_assignments')
-    .select('id, is_completed, completed_at, assigned_at, homework:homework_id(id, title, due_date, book_reference)')
+    .select('id, is_completed, completed_at, assigned_at, behavior_satisfactory, teacher_feedback, homework:homework_id(id, title, due_date, book_reference)')
     .eq('student_id', studentId)
     .order('assigned_at', { ascending: false })
 
@@ -88,33 +88,35 @@ export default async function StudentHomeworkPage({
                 ? startOfDay(parseISO(hw.due_date)) < today
                 : false
               return (
-                <div key={a.id} className="flex items-center justify-between gap-4 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">{hw.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      {hw.due_date && (
-                        <span className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
-                          {isOverdue ? 'Overdue · ' : 'Due '}
-                          {format(parseISO(hw.due_date), 'd MMM yyyy')}
-                        </span>
-                      )}
-                      {hw.book_reference && (
-                        <span className="text-xs text-slate-300">· {hw.book_reference}</span>
-                      )}
+                <div key={a.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">{hw.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        {hw.due_date && (
+                          <span className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                            {isOverdue ? 'Overdue · ' : 'Due '}
+                            {format(parseISO(hw.due_date), 'd MMM yyyy')}
+                          </span>
+                        )}
+                        {hw.book_reference && (
+                          <span className="text-xs text-slate-300">· {hw.book_reference}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <form action={toggleCompletionAction} className="shrink-0">
-                    <input type="hidden" name="assignmentId" value={a.id} />
-                    <input type="hidden" name="currentState" value="false" />
-                    <input type="hidden" name="studentId" value={studentId} />
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-teal-700 border border-slate-200 hover:border-teal-200 hover:bg-teal-50 px-3 py-1.5 rounded-md transition-colors"
-                    >
-                      <CheckCircle2 size={13} />
-                      Mark done
-                    </button>
-                  </form>
+                  {/* Feedback form */}
+                  <div className="mt-3">
+                    <HomeworkFeedbackForm
+                      assignmentId={a.id}
+                      studentId={studentId}
+                      isCompleted={false}
+                      existingFeedback={{
+                        behavior_satisfactory: a.behavior_satisfactory ?? null,
+                        teacher_feedback: a.teacher_feedback ?? null,
+                      }}
+                    />
+                  </div>
                 </div>
               )
             })}
@@ -132,25 +134,27 @@ export default async function StudentHomeworkPage({
             {completed.map(a => {
               const hw = a.homework as any
               return (
-                <div key={a.id} className="flex items-center justify-between gap-4 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm text-slate-400 line-through truncate">{hw.title}</p>
-                    {hw.book_reference && (
-                      <p className="text-xs text-slate-300 mt-0.5">{hw.book_reference}</p>
-                    )}
+                <div key={a.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm text-slate-400 line-through truncate">{hw.title}</p>
+                      {hw.book_reference && (
+                        <p className="text-xs text-slate-300 mt-0.5">{hw.book_reference}</p>
+                      )}
+                    </div>
                   </div>
-                  <form action={toggleCompletionAction} className="shrink-0">
-                    <input type="hidden" name="assignmentId" value={a.id} />
-                    <input type="hidden" name="currentState" value="true" />
-                    <input type="hidden" name="studentId" value={studentId} />
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1.5 text-xs text-teal-600 hover:text-slate-500 border border-teal-100 hover:border-slate-200 bg-teal-50 hover:bg-white px-3 py-1.5 rounded-md transition-colors"
-                    >
-                      <CheckCircle2 size={13} />
-                      Completed
-                    </button>
-                  </form>
+                  {/* Feedback form — shows as "Completed" chip with expand */}
+                  <div className="mt-2">
+                    <HomeworkFeedbackForm
+                      assignmentId={a.id}
+                      studentId={studentId}
+                      isCompleted={true}
+                      existingFeedback={{
+                        behavior_satisfactory: a.behavior_satisfactory ?? null,
+                        teacher_feedback: a.teacher_feedback ?? null,
+                      }}
+                    />
+                  </div>
                 </div>
               )
             })}
