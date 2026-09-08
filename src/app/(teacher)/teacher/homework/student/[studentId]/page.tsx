@@ -6,6 +6,7 @@ import { format, parseISO, startOfDay } from 'date-fns'
 import { buttonVariants } from '@/components/ui/button'
 import { ArrowLeft, Plus } from 'lucide-react'
 import HomeworkFeedbackForm from './HomeworkFeedbackForm'
+import DeleteHomeworkButton from './DeleteHomeworkButton'
 
 export default async function StudentHomeworkPage({
   params,
@@ -104,6 +105,7 @@ export default async function StudentHomeworkPage({
                         )}
                       </div>
                     </div>
+                    <DeleteHomeworkButton assignmentId={a.id} studentId={studentId} />
                   </div>
                   {/* Feedback form */}
                   <div className="mt-3">
@@ -142,6 +144,7 @@ export default async function StudentHomeworkPage({
                         <p className="text-xs text-slate-300 mt-0.5">{hw.book_reference}</p>
                       )}
                     </div>
+                    <DeleteHomeworkButton assignmentId={a.id} studentId={studentId} />
                   </div>
                   {/* Feedback form — shows as "Completed" chip with expand */}
                   <div className="mt-2">
