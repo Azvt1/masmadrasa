@@ -44,6 +44,7 @@ export async function createUserAction(
   const teacherId   = formData.get('teacher_id') as string | null
   const studentType = formData.get('student_type') as 'iqra' | 'quran' | null
   const dob         = formData.get('date_of_birth') as string | null
+  const parentPhone = (formData.get('parent_phone') as string | null)?.trim() || null
 
   if (role === 'student' && (!teacherId || !studentType)) {
     return { error: 'Teacher assignment and student type are required for students.' }
@@ -85,10 +86,11 @@ export async function createUserAction(
     const { data: studentRecord, error: studentError } = await admin
       .from('students')
       .insert({
-        profile_id:   userId,
-        teacher_id:   teacherId,
-        student_type: studentType,
+        profile_id:    userId,
+        teacher_id:    teacherId,
+        student_type:  studentType,
         date_of_birth: dob || null,
+        parent_phone:  parentPhone,
       })
       .select('id')
       .single()
@@ -118,4 +120,17 @@ export async function createUserAction(
 
   revalidatePath('/admin/users')
   redirect('/admin/users')
+}
+
+export async function updateParentPhoneAction(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  const admin       = createAdminClient()
+  const studentId   = formData.get('student_id') as string
+  const parentPhone = (formData.get('parent_phone') as string).trim() || null
+
+  await admin.from('students').update({ parent_phone: parentPhone }).eq('id', studentId)
+  revalidatePath('/admin/users')
 }

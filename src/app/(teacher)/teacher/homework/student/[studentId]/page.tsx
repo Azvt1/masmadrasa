@@ -4,9 +4,11 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO, startOfDay } from 'date-fns'
 import { buttonVariants } from '@/components/ui/button'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, Plus, Pencil } from 'lucide-react'
 import HomeworkFeedbackForm from './HomeworkFeedbackForm'
 import DeleteHomeworkButton from './DeleteHomeworkButton'
+import WhatsAppButton from '@/components/shared/WhatsAppButton'
+import HomeworkWhatsAppButton from '@/components/shared/HomeworkWhatsAppButton'
 
 export default async function StudentHomeworkPage({
   params,
@@ -21,7 +23,7 @@ export default async function StudentHomeworkPage({
   // Verify student belongs to this teacher
   const { data: student } = await supabase
     .from('students')
-    .select('id, student_type, profile_id')
+    .select('id, student_type, profile_id, parent_phone')
     .eq('id', studentId)
     .eq('teacher_id', user.id)
     .single()
@@ -40,7 +42,7 @@ export default async function StudentHomeworkPage({
   // All assignments — include feedback columns
   const { data: assignments } = await supabase
     .from('homework_assignments')
-    .select('id, is_completed, completed_at, assigned_at, behavior_satisfactory, teacher_feedback, homework:homework_id(id, title, due_date, book_reference)')
+    .select('id, is_completed, completed_at, assigned_at, behavior_satisfactory, teacher_feedback, homework:homework_id(id, title, due_date, book_reference, surah_number)')
     .eq('student_id', studentId)
     .order('assigned_at', { ascending: false })
 
@@ -71,6 +73,13 @@ export default async function StudentHomeworkPage({
             <Plus size={14} className="mr-1.5" />
             Assign homework
           </Link>
+        </div>
+        {/* WhatsApp parent contact */}
+        <div className="mt-4">
+          <WhatsAppButton
+            parentPhone={(student as any).parent_phone ?? null}
+            studentName={studentName}
+          />
         </div>
       </div>
 
@@ -105,7 +114,21 @@ export default async function StudentHomeworkPage({
                         )}
                       </div>
                     </div>
-                    <DeleteHomeworkButton assignmentId={a.id} studentId={studentId} />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <HomeworkWhatsAppButton
+                        parentPhone={(student as any).parent_phone ?? null}
+                        studentName={studentName}
+                        homeworkTitle={hw.title}
+                      />
+                      <Link
+                        href={`/teacher/homework/student/${studentId}/${a.id}/edit`}
+                        title="Edit homework"
+                        className="p-1.5 text-slate-300 hover:text-teal-500 transition-colors rounded"
+                      >
+                        <Pencil size={14} />
+                      </Link>
+                      <DeleteHomeworkButton assignmentId={a.id} studentId={studentId} />
+                    </div>
                   </div>
                   {/* Feedback form */}
                   <div className="mt-3">
@@ -144,7 +167,21 @@ export default async function StudentHomeworkPage({
                         <p className="text-xs text-slate-300 mt-0.5">{hw.book_reference}</p>
                       )}
                     </div>
-                    <DeleteHomeworkButton assignmentId={a.id} studentId={studentId} />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <HomeworkWhatsAppButton
+                        parentPhone={(student as any).parent_phone ?? null}
+                        studentName={studentName}
+                        homeworkTitle={hw.title}
+                      />
+                      <Link
+                        href={`/teacher/homework/student/${studentId}/${a.id}/edit`}
+                        title="Edit homework"
+                        className="p-1.5 text-slate-300 hover:text-teal-500 transition-colors rounded"
+                      >
+                        <Pencil size={14} />
+                      </Link>
+                      <DeleteHomeworkButton assignmentId={a.id} studentId={studentId} />
+                    </div>
                   </div>
                   {/* Feedback form — shows as "Completed" chip with expand */}
                   <div className="mt-2">

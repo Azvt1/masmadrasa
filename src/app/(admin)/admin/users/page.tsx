@@ -1,11 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus } from 'lucide-react'
+import EditParentPhone from './EditParentPhone'
 
 export default async function UsersPage() {
   const supabase = await createClient()
+  const admin    = createAdminClient()
 
   // Fetch teachers
   const { data: teachers } = await supabase
@@ -14,10 +17,10 @@ export default async function UsersPage() {
     .eq('role', 'teacher')
     .order('full_name')
 
-  // Fetch students with their assigned teacher name
-  const { data: students } = await supabase
+  // Fetch students with parent_phone
+  const { data: students } = await admin
     .from('students')
-    .select('id, student_type, is_active, enrollment_date, profile:profile_id(full_name, phone, created_at), teacher:teacher_id(full_name)')
+    .select('id, student_type, is_active, enrollment_date, parent_phone, profile:profile_id(full_name, phone, created_at), teacher:teacher_id(full_name)')
     .order('enrollment_date', { ascending: false })
 
   function formatDate(dateStr: string) {
@@ -88,6 +91,7 @@ export default async function UsersPage() {
                 <th className="text-left px-4 py-2.5 font-medium text-slate-600">Name</th>
                 <th className="text-left px-4 py-2.5 font-medium text-slate-600">Type</th>
                 <th className="text-left px-4 py-2.5 font-medium text-slate-600">Teacher</th>
+                <th className="text-left px-4 py-2.5 font-medium text-slate-600">Parent WhatsApp</th>
                 <th className="text-left px-4 py-2.5 font-medium text-slate-600">Status</th>
                 <th className="text-left px-4 py-2.5 font-medium text-slate-600">Enrolled</th>
               </tr>
@@ -106,6 +110,9 @@ export default async function UsersPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-500">{teacher?.full_name ?? '—'}</td>
                     <td className="px-4 py-3">
+                      <EditParentPhone studentId={s.id} currentPhone={s.parent_phone ?? null} />
+                    </td>
+                    <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                         s.is_active
                           ? 'bg-green-50 text-green-700'
@@ -120,7 +127,7 @@ export default async function UsersPage() {
               })}
               {(!students || students.length === 0) && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400 text-sm">
+                  <td colSpan={6} className="px-4 py-6 text-center text-slate-400 text-sm">
                     No students yet.{' '}
                     <Link href="/admin/users/new?role=student" className="text-teal-600 hover:underline">
                       Enrol the first one.

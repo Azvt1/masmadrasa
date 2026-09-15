@@ -140,6 +140,12 @@ export default function NewUserPage() {
                   <Label htmlFor="date_of_birth">Date of birth <span className="text-slate-400 font-normal">(optional)</span></Label>
                   <Input id="date_of_birth" name="date_of_birth" type="date" />
                 </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="parent_phone">Parent WhatsApp number <span className="text-slate-400 font-normal">(optional)</span></Label>
+                  <Input id="parent_phone" name="parent_phone" type="tel" placeholder="+61 412 345 678" />
+                  <p className="text-xs text-slate-400">Used by teachers to message parents directly via WhatsApp.</p>
+                </div>
               </>
             )}
 

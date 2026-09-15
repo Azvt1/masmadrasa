@@ -1,9 +1,8 @@
 'use client'
 
 import { useActionState, useState, useMemo } from 'react'
-import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { createHomeworkAction } from './actions'
+import { updateHomeworkAction } from './actions'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +15,6 @@ type Surah = { num: number; name: string; ayahs: number; juz: number }
 
 const JUZS = Array.from({ length: 30 }, (_, i) => i + 1)
 
-// Shared surah row UI
 function SurahRow({ s, isSelected, onSelect }: {
   s: Surah
   isSelected: boolean
@@ -44,20 +42,41 @@ function SurahRow({ s, isSelected, onSelect }: {
   )
 }
 
-export default function NewHomeworkPage() {
-  const params = useParams<{ studentId: string }>()
-  const studentId = params.studentId
-  const [state, action, isPending] = useActionState(createHomeworkAction, {})
+interface Props {
+  assignmentId: string
+  studentId: string
+  homeworkId: string
+  initialSurahNum: number | null
+  initialAyahFrom: string
+  initialAyahTo: string
+  initialPage: string
+  initialDueDate: string
+  initialInstructions: string
+}
+
+export default function EditHomeworkForm({
+  assignmentId,
+  studentId,
+  homeworkId,
+  initialSurahNum,
+  initialAyahFrom,
+  initialAyahTo,
+  initialPage,
+  initialDueDate,
+  initialInstructions,
+}: Props) {
+  const [state, action, isPending] = useActionState(updateHomeworkAction, {})
+
+  const allSurahs: Surah[] = SURAHS.map(([num, name, ayahs, juz]) => ({ num, name, ayahs, juz }))
+  const initialSurah = initialSurahNum ? allSurahs.find(s => s.num === initialSurahNum) ?? null : null
 
   const [tab, setTab]           = useState<Tab>('surah')
   const [search, setSearch]     = useState('')
-  const [selectedJuz, setSelectedJuz] = useState<number | null>(null)
-  const [selected, setSelected] = useState<Surah | null>(null)
-  const [ayahFrom, setAyahFrom] = useState(1)
-  const [ayahTo, setAyahTo]     = useState(1)
-  const [page, setPage]         = useState('')
-
-  const allSurahs: Surah[] = SURAHS.map(([num, name, ayahs, juz]) => ({ num, name, ayahs, juz }))
+  const [selectedJuz, setSelectedJuz] = useState<number | null>(initialSurah?.juz ?? null)
+  const [selected, setSelected] = useState<Surah | null>(initialSurah)
+  const [ayahFrom, setAyahFrom] = useState(parseInt(initialAyahFrom) || 1)
+  const [ayahTo, setAyahTo]     = useState(parseInt(initialAyahTo) || (initialSurah?.ayahs ?? 1))
+  const [page, setPage]         = useState(initialPage)
 
   const filteredBySearch = useMemo(() => {
     const q = search.toLowerCase()
@@ -93,16 +112,18 @@ export default function NewHomeworkPage() {
         </Link>
       </div>
 
+      <h1 className="text-xl font-semibold text-slate-900 mb-6">Edit Homework</h1>
+
       <form action={action} className="space-y-6">
+        <input type="hidden" name="assignment_id"  value={assignmentId} />
         <input type="hidden" name="student_id"     value={studentId} />
+        <input type="hidden" name="homework_id"    value={homeworkId} />
         <input type="hidden" name="title"          value={generatedTitle} />
         <input type="hidden" name="book_reference" value={generatedRef} />
         <input type="hidden" name="surah_number"   value={selected?.num ?? ''} />
 
         {/* ── Surah picker ── */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-
-          {/* Tab bar */}
           <div className="flex border-b border-slate-100">
             <button
               type="button"
@@ -152,9 +173,7 @@ export default function NewHomeworkPage() {
               </div>
             </>
           ) : (
-            /* By Juz */
             <div className="flex" style={{ height: '13rem' }}>
-              {/* Juz list */}
               <div className="w-24 border-r border-slate-100 overflow-y-auto shrink-0">
                 {JUZS.map(j => (
                   <button
@@ -171,7 +190,6 @@ export default function NewHomeworkPage() {
                   </button>
                 ))}
               </div>
-              {/* Surah list for selected juz */}
               <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
                 {!selectedJuz && (
                   <p className="text-sm text-slate-400 text-center py-8">Select a Juz</p>
@@ -184,7 +202,7 @@ export default function NewHomeworkPage() {
           )}
         </div>
 
-        {/* ── Ayat picker + Page (shown once surah selected) ── */}
+        {/* ── Ayat picker + Page ── */}
         {selected && (
           <div className="space-y-3">
             <div className="px-1">
@@ -194,7 +212,6 @@ export default function NewHomeworkPage() {
               </p>
             </div>
 
-            {/* Drum picker */}
             <AyahRangePicker
               maxAyahs={selected.ayahs}
               from={ayahFrom}
@@ -203,7 +220,6 @@ export default function NewHomeworkPage() {
               onToChange={setAyahTo}
             />
 
-            {/* Page + preview row */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 shrink-0">
                 <Label className="text-xs whitespace-nowrap">Page <span className="text-slate-400">(opt.)</span></Label>
@@ -235,6 +251,7 @@ export default function NewHomeworkPage() {
             id="instructions"
             name="instructions"
             rows={3}
+            defaultValue={initialInstructions}
             placeholder="Any specific guidance for the student…"
             className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
           />
@@ -245,7 +262,7 @@ export default function NewHomeworkPage() {
           <Label htmlFor="due_date">
             Due date <span className="text-slate-400 font-normal">(optional)</span>
           </Label>
-          <Input id="due_date" name="due_date" type="date" />
+          <Input id="due_date" name="due_date" type="date" defaultValue={initialDueDate} />
         </div>
 
         {state?.error && (
@@ -260,7 +277,7 @@ export default function NewHomeworkPage() {
             className="bg-teal-600 hover:bg-teal-700"
             disabled={isPending || !selected}
           >
-            {isPending ? 'Assigning…' : 'Assign homework'}
+            {isPending ? 'Saving…' : 'Save changes'}
           </Button>
           <Link href={`/teacher/homework/student/${studentId}`} className={buttonVariants({ variant: 'outline' })}>
             Cancel

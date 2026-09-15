@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { parseISO, startOfDay } from 'date-fns'
 import { CalendarCheck, BookOpen, TrendingUp, AlertTriangle, CheckCircle2, ArrowRightCircle } from 'lucide-react'
+import WhatsAppButton from '@/components/shared/WhatsAppButton'
 
 function AttendancePill({ rate, total }: { rate: number; total: number }) {
   if (total === 0) return <span className="text-xs text-slate-300">No sessions yet</span>
@@ -25,7 +26,7 @@ export default async function TeacherStudentsPage() {
 
   // Batch 1 — independent: students + active term
   const [{ data: studentRows }, { data: term }] = await Promise.all([
-    supabase.from('students').select('id, student_type, profile_id, ready_to_advance')
+    supabase.from('students').select('id, student_type, profile_id, ready_to_advance, parent_phone')
       .eq('teacher_id', user.id).eq('is_active', true).order('enrollment_date'),
     supabase.from('terms').select('id').eq('is_active', true).single(),
   ])
@@ -100,6 +101,7 @@ export default async function TeacherStudentsPage() {
       name: profileMap.get(s.profile_id) ?? '—',
       student_type: s.student_type as string,
       ready_to_advance: s.ready_to_advance,
+      parent_phone: (s as any).parent_phone as string | null,
       rate, totalSessions: pastSessionIds.length,
       pendingHw: pendingMap.get(s.id) ?? 0,
       progress,
@@ -159,6 +161,9 @@ export default async function TeacherStudentsPage() {
           className="flex-1 text-center text-xs font-medium text-slate-600 hover:text-teal-700 hover:bg-teal-50 py-1.5 rounded-md border border-slate-200 hover:border-teal-200 transition-colors">
           Attendance
         </Link>
+      </div>
+      <div className="pt-1 border-t border-slate-100">
+        <WhatsAppButton parentPhone={s.parent_phone} studentName={s.name} />
       </div>
     </div>
   )
