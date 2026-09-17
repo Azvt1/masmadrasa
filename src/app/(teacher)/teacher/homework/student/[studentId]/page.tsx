@@ -185,6 +185,11 @@ export default async function StudentHomeworkPage({
             {completed.map(a => {
               const hw = a.homework as any
               const ackStatus = (a as any).parent_acknowledged as boolean | null | undefined
+              // For completed homework, future = all pending homeworks
+              const futureFromPending = pending.map(p => ({
+                title: (p.homework as any).title,
+                ackUrl: `${baseUrl}/ack/${p.id}`,
+              }))
               return (
                 <div key={a.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-4">
@@ -210,6 +215,7 @@ export default async function StudentHomeworkPage({
                         isCompleted={a.is_completed}
                         behaviorSatisfactory={a.behavior_satisfactory ?? null}
                         teacherFeedback={a.teacher_feedback ?? null}
+                        futureHomework={futureFromPending}
                       />
                       <Link
                         href={`/teacher/homework/student/${studentId}/${a.id}/edit`}
