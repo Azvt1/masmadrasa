@@ -97,6 +97,9 @@ export default async function StudentHomeworkPage({
               const isOverdue = hw.due_date
                 ? startOfDay(parseISO(hw.due_date)) < today
                 : false
+              const upcomingHomework = pending
+                .filter(p => p.id !== a.id)
+                .map(p => (p.homework as any).title)
               return (
                 <div key={a.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-4">
@@ -122,6 +125,7 @@ export default async function StudentHomeworkPage({
                         isCompleted={a.is_completed}
                         behaviorSatisfactory={a.behavior_satisfactory ?? null}
                         teacherFeedback={a.teacher_feedback ?? null}
+                        upcomingHomework={upcomingHomework}
                       />
                       <Link
                         href={`/teacher/homework/student/${studentId}/${a.id}/edit`}
@@ -161,6 +165,7 @@ export default async function StudentHomeworkPage({
           <div className="bg-white border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100">
             {completed.map(a => {
               const hw = a.homework as any
+              const upcomingHomework = pending.map(p => (p.homework as any).title)
               return (
                 <div key={a.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-4">
@@ -180,6 +185,7 @@ export default async function StudentHomeworkPage({
                         isCompleted={a.is_completed}
                         behaviorSatisfactory={a.behavior_satisfactory ?? null}
                         teacherFeedback={a.teacher_feedback ?? null}
+                        upcomingHomework={upcomingHomework}
                       />
                       <Link
                         href={`/teacher/homework/student/${studentId}/${a.id}/edit`}

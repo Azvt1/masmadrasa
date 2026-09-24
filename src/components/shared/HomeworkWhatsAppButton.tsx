@@ -11,6 +11,7 @@ interface Props {
   isCompleted?: boolean | null
   behaviorSatisfactory?: boolean | null
   teacherFeedback?: string | null
+  upcomingHomework?: string[]
 }
 
 function normalizePhone(raw: string): string {
@@ -23,7 +24,9 @@ function buildMessage(
   isCompleted: boolean | null | undefined,
   behaviorSatisfactory: boolean | null | undefined,
   teacherFeedback: string | null | undefined,
+  upcomingHomework: string[] | undefined,
 ): string {
+  const firstName = studentName.split(' ')[0]
   const hasFeedback = isCompleted !== null && isCompleted !== undefined
 
   let msg = `Assalamu Alaykum,\n\nThis is a message from the madrasa regarding ${studentName}.\n\n`
@@ -37,6 +40,14 @@ function buildMessage(
     if (teacherFeedback?.trim()) {
       msg += `\n💬 *Teacher's feedback:*\n${teacherFeedback.trim()}\n`
     }
+  }
+
+  if (upcomingHomework && upcomingHomework.length > 0) {
+    msg += `\n━━━━━━━━━━━━━━━\n`
+    msg += `📚 *Upcoming homework for ${firstName}:*\n`
+    upcomingHomework.forEach(title => {
+      msg += `• ${title}\n`
+    })
   }
 
   msg += `\nJazakAllahu Khayran.`
@@ -57,6 +68,7 @@ export default function HomeworkWhatsAppButton({
   isCompleted,
   behaviorSatisfactory,
   teacherFeedback,
+  upcomingHomework,
 }: Props) {
   const [open, setOpen]       = useState(false)
   const [editing, setEditing] = useState(false)
@@ -81,7 +93,7 @@ export default function HomeworkWhatsAppButton({
   const hasFeedback = isCompleted !== null && isCompleted !== undefined
 
   function handleOpen() {
-    setMessage(buildMessage(studentName, homeworkTitle, isCompleted, behaviorSatisfactory, teacherFeedback))
+    setMessage(buildMessage(studentName, homeworkTitle, isCompleted, behaviorSatisfactory, teacherFeedback, upcomingHomework))
     setEditing(false)
     setOpen(true)
   }
