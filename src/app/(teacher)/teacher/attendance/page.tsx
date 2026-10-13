@@ -4,19 +4,39 @@ import { redirect } from 'next/navigation'
 import { CalendarCheck, CheckCircle2, Circle, ChevronRight } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
-export default async function TeacherAttendancePage() {
+export default async function TeacherAttendancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ term?: string }>
+}) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Batch 1 — parallel: active term + teacher's students
-  const [{ data: term }, { data: students }] = await Promise.all([
-    supabase.from('terms').select('*').eq('is_active', true).single(),
+  const { term: termParam } = await searchParams
+
+  // Load all terms (for tabs) + students in parallel
+  const [{ data: allTerms }, { data: students }] = await Promise.all([
+    supabase.from('terms').select('*').order('start_date', { ascending: false }),
     supabase.from('students').select('id').eq('teacher_id', user.id).eq('is_active', true),
   ])
 
-  if (!term) {
+  if (!allTerms || allTerms.length === 0) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-xl font-semibold text-slate-900">Attendance</h1>
+        <p className="text-sm text-slate-500">No terms found. Ask your admin to set one up.</p>
+      </div>
+    )
+  }
+
+  // Active term is the selected tab, defaulting to is_active term
+  const activeTerm = allTerms.find(t => t.is_active)
+  const selectedTerm = termParam
+    ? allTerms.find(t => t.id === termParam) ?? activeTerm
+    : activeTerm
+
+  if (!selectedTerm) {
     return (
       <div className="space-y-2">
         <h1 className="text-xl font-semibold text-slate-900">Attendance</h1>
@@ -28,18 +48,22 @@ export default async function TeacherAttendancePage() {
   const studentIds    = students?.map(s => s.id) ?? []
   const totalStudents = studentIds.length
 
-  // Batch 2 — parallel: sessions + attendance records
+  // Sessions + attendance records for selected term
   const [{ data: sessions }, { data: records }] = await Promise.all([
     supabase.from('class_sessions').select('id, session_date, day_of_week')
-      .eq('term_id', term.id).order('session_date'),
+      .eq('term_id', selectedTerm.id).order('session_date'),
     studentIds.length > 0
       ? supabase.from('attendance_records').select('session_id, student_id').in('student_id', studentIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [] as { session_id: string; student_id: string }[] }),
   ])
+
+  // Filter attendance records to only sessions in this term
+  const termSessionIds = new Set((sessions ?? []).map(s => s.id))
+  const termRecords = (records ?? []).filter(r => termSessionIds.has(r.session_id))
 
   // Map: sessionId → count of marked students
   const markedBySession = new Map<string, number>()
-  records?.forEach(r => {
+  termRecords.forEach(r => {
     markedBySession.set(r.session_id, (markedBySession.get(r.session_id) ?? 0) + 1)
   })
 
@@ -60,9 +84,31 @@ export default async function TeacherAttendancePage() {
       <div>
         <h1 className="text-xl font-semibold text-slate-900">Attendance</h1>
         <p className="text-sm text-slate-500 mt-0.5">
-          {term.name} · {format(parseISO(term.start_date), 'd MMM')} – {format(parseISO(term.end_date), 'd MMM yyyy')}
+          {format(parseISO(selectedTerm.start_date), 'd MMM')} – {format(parseISO(selectedTerm.end_date), 'd MMM yyyy')}
         </p>
       </div>
+
+      {/* Term tabs */}
+      {allTerms.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {allTerms.map(t => (
+            <Link
+              key={t.id}
+              href={`/teacher/attendance?term=${t.id}`}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                t.id === selectedTerm.id
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {t.name}
+              {t.is_active && t.id !== selectedTerm.id && (
+                <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 inline-block align-middle" />
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {totalStudents === 0 ? (
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-700">

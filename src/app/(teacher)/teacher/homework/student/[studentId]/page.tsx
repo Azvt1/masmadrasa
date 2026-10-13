@@ -12,10 +12,13 @@ import HomeworkWhatsAppButton from '@/components/shared/HomeworkWhatsAppButton'
 
 export default async function StudentHomeworkPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ studentId: string }>
+  searchParams: Promise<{ term?: string }>
 }) {
   const { studentId } = await params
+  const { term: termParam } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -39,16 +42,32 @@ export default async function StudentHomeworkPage({
     .single()
   const studentName = profile?.full_name ?? '—'
 
-  // All assignments
+  // All terms (for tabs)
+  const { data: allTerms } = await supabase
+    .from('terms')
+    .select('id, name, is_active')
+    .order('start_date', { ascending: false })
+
+  const activeTerm   = allTerms?.find(t => t.is_active)
+  const selectedTerm = termParam
+    ? allTerms?.find(t => t.id === termParam) ?? activeTerm
+    : activeTerm
+
+  // Assignments for selected term only
   const { data: assignments } = await supabase
     .from('homework_assignments')
-    .select('id, is_completed, completed_at, assigned_at, behavior_satisfactory, teacher_feedback, homework:homework_id(id, title, due_date, book_reference, surah_number)')
+    .select('id, is_completed, completed_at, assigned_at, behavior_satisfactory, teacher_feedback, homework:homework_id(id, title, due_date, book_reference, surah_number, term_id)')
     .eq('student_id', studentId)
     .order('assigned_at', { ascending: false })
 
+  // Filter to selected term
+  const termAssignments = selectedTerm
+    ? (assignments ?? []).filter(a => (a.homework as any)?.term_id === selectedTerm.id)
+    : (assignments ?? [])
+
   const today = startOfDay(new Date())
-  const pending   = (assignments ?? []).filter(a => !a.is_completed)
-  const completed = (assignments ?? []).filter(a => a.is_completed)
+  const pending   = termAssignments.filter(a => !a.is_completed)
+  const completed = termAssignments.filter(a => a.is_completed)
 
   return (
     <div className="space-y-6 max-w-xl">
@@ -74,6 +93,28 @@ export default async function StudentHomeworkPage({
             Assign homework
           </Link>
         </div>
+        {/* Term tabs */}
+        {allTerms && allTerms.length > 1 && (
+          <div className="flex gap-2 flex-wrap mt-4">
+            {allTerms.map(t => (
+              <Link
+                key={t.id}
+                href={`/teacher/homework/student/${studentId}?term=${t.id}`}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  t.id === selectedTerm?.id
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+              >
+                {t.name}
+                {t.is_active && t.id !== selectedTerm?.id && (
+                  <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 inline-block align-middle" />
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
+
         {/* WhatsApp parent contact */}
         <div className="mt-4">
           <WhatsAppButton
@@ -216,8 +257,10 @@ export default async function StudentHomeworkPage({
         </div>
       )}
 
-      {assignments?.length === 0 && (
-        <p className="text-sm text-slate-400 text-center py-6">No homework assigned yet.</p>
+      {termAssignments.length === 0 && (
+        <p className="text-sm text-slate-400 text-center py-6">
+          No homework assigned for {selectedTerm?.name ?? 'this term'} yet.
+        </p>
       )}
     </div>
   )

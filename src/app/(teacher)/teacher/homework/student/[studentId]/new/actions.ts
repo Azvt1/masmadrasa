@@ -30,9 +30,16 @@ export async function createHomeworkAction(
 
   if (!student) return { error: 'Student not found.' }
 
+  // Get active term
+  const { data: activeTerm } = await supabase
+    .from('terms')
+    .select('id')
+    .eq('is_active', true)
+    .single()
+
   const { data: hw, error: hwError } = await supabase
     .from('homework')
-    .insert({ teacher_id: user.id, title, instructions, due_date, book_reference, surah_number })
+    .insert({ teacher_id: user.id, title, instructions, due_date, book_reference, surah_number, term_id: activeTerm?.id ?? null })
     .select('id')
     .single()
 

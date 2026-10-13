@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { BookOpen, ChevronRight, AlertTriangle } from 'lucide-react'
 
 function CompletionBar({ rate, atRisk }: { rate: number; atRisk: boolean }) {
-  const color = atRisk ? 'bg-red-400' : rate >= 80 ? 'bg-teal-500' : 'bg-amber-400'
+  const color     = atRisk ? 'bg-red-400' : rate >= 80 ? 'bg-teal-500' : 'bg-amber-400'
   const textColor = atRisk ? 'text-red-600' : rate >= 80 ? 'text-teal-600' : 'text-amber-600'
   return (
     <div className="flex items-center gap-2">
@@ -18,17 +18,22 @@ function CompletionBar({ rate, atRisk }: { rate: number; atRisk: boolean }) {
   )
 }
 
-export default async function TeacherHomeworkPage() {
+export default async function TeacherHomeworkPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ term?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: studentRows } = await supabase
-    .from('students')
-    .select('id, student_type, profile_id')
-    .eq('teacher_id', user.id)
-    .eq('is_active', true)
-    .order('enrollment_date')
+  const { term: termParam } = await searchParams
+
+  const [{ data: studentRows }, { data: allTerms }] = await Promise.all([
+    supabase.from('students').select('id, student_type, profile_id')
+      .eq('teacher_id', user.id).eq('is_active', true).order('enrollment_date'),
+    supabase.from('terms').select('id, name, is_active').order('start_date', { ascending: false }),
+  ])
 
   if (!studentRows || studentRows.length === 0) {
     return (
@@ -39,23 +44,32 @@ export default async function TeacherHomeworkPage() {
     )
   }
 
+  const activeTerm   = allTerms?.find(t => t.is_active)
+  const selectedTerm = termParam
+    ? allTerms?.find(t => t.id === termParam) ?? activeTerm
+    : activeTerm
+
   const admin      = createAdminClient()
   const profileIds = studentRows.map(s => s.profile_id)
   const studentIds = studentRows.map(s => s.id)
 
-  // Parallel: profile names + ALL homework assignments (to derive pending + completion rate)
   const [{ data: profileRows }, { data: allAssignments }] = await Promise.all([
     admin.from('profiles').select('id, full_name').in('id', profileIds),
     supabase.from('homework_assignments')
-      .select('student_id, is_completed')
+      .select('student_id, is_completed, homework:homework_id(term_id)')
       .in('student_id', studentIds),
   ])
+
   const profileMap = new Map((profileRows ?? []).map(p => [p.id, p.full_name]))
 
-  // Derive per-student stats
+  // Only count assignments for the selected term
+  const termAssignments = (allAssignments ?? []).filter(
+    a => (a.homework as any)?.term_id === selectedTerm?.id
+  )
+
   const statsMap = new Map<string, { total: number; completed: number }>()
   studentIds.forEach(id => statsMap.set(id, { total: 0, completed: 0 }))
-  allAssignments?.forEach(a => {
+  termAssignments.forEach(a => {
     const s = statsMap.get(a.student_id)
     if (!s) return
     s.total++
@@ -71,11 +85,7 @@ export default async function TeacherHomeworkPage() {
       id:           s.id,
       full_name:    profileMap.get(s.profile_id) ?? '—',
       student_type: s.student_type as string,
-      pending,
-      total:        stats.total,
-      completed:    stats.completed,
-      rate,
-      atRisk,
+      pending, total: stats.total, completed: stats.completed, rate, atRisk,
     }
   })
 
@@ -88,7 +98,7 @@ export default async function TeacherHomeworkPage() {
       {items.map(s => (
         <Link
           key={s.id}
-          href={`/teacher/homework/student/${s.id}`}
+          href={`/teacher/homework/student/${s.id}${selectedTerm ? `?term=${selectedTerm.id}` : ''}`}
           className={`flex items-center justify-between px-4 py-3.5 hover:bg-slate-50 transition-colors group ${
             s.atRisk ? 'bg-red-50/40 hover:bg-red-50/60' : ''
           }`}
@@ -108,12 +118,7 @@ export default async function TeacherHomeworkPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Completion bar — only if any homework assigned */}
-            {s.rate !== null && (
-              <CompletionBar rate={s.rate} atRisk={s.atRisk} />
-            )}
-
-            {/* Pending badge */}
+            {s.rate !== null && <CompletionBar rate={s.rate} atRisk={s.atRisk} />}
             {s.pending > 0 && (
               <span className="text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 rounded-full">
                 {s.pending} pending
@@ -122,7 +127,6 @@ export default async function TeacherHomeworkPage() {
             {s.total === 0 && (
               <span className="text-xs text-slate-300">No homework yet</span>
             )}
-
             <ChevronRight size={15} className="text-slate-300 group-hover:text-slate-400 transition-colors" />
           </div>
         </Link>
@@ -135,7 +139,7 @@ export default async function TeacherHomeworkPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Homework</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Select a student to view or assign homework.</p>
+          <p className="text-sm text-slate-400 mt-0.5 text-sm">{selectedTerm?.name ?? 'All terms'}</p>
         </div>
         {atRiskCount > 0 && (
           <div className="flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-lg">
@@ -144,6 +148,28 @@ export default async function TeacherHomeworkPage() {
           </div>
         )}
       </div>
+
+      {/* Term tabs */}
+      {allTerms && allTerms.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {allTerms.map(t => (
+            <Link
+              key={t.id}
+              href={`/teacher/homework?term=${t.id}`}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                t.id === selectedTerm?.id
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {t.name}
+              {t.is_active && t.id !== selectedTerm?.id && (
+                <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 inline-block align-middle" />
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {iqra.length > 0 && (
         <div className="space-y-2">

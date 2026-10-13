@@ -56,7 +56,7 @@ export default async function TeacherStudentsPage() {
     term
       ? supabase.from('class_sessions').select('id, session_date').eq('term_id', term.id)
       : Promise.resolve({ data: [] }),
-    supabase.from('homework_assignments').select('student_id')
+    supabase.from('homework_assignments').select('student_id, homework:homework_id(term_id)')
       .in('student_id', studentIds).eq('is_completed', false),
     supabase.from('iqra_progress').select('student_id, current_book, current_page').in('student_id', studentIds),
     supabase.from('quran_progress').select('student_id, current_surah, current_juz').in('student_id', studentIds),
@@ -86,8 +86,14 @@ export default async function TeacherStudentsPage() {
     if (r.status === 'late')    a.late++
   })
 
+  // Only count pending homework that belongs to the active term
+  const activeTermId = term?.id ?? null
   const pendingMap = new Map<string, number>()
-  pendingHw?.forEach(a => pendingMap.set(a.student_id, (pendingMap.get(a.student_id) ?? 0) + 1))
+  pendingHw?.forEach(a => {
+    const hwTermId = (a.homework as any)?.term_id ?? null
+    if (activeTermId && hwTermId !== activeTermId) return  // skip other terms
+    pendingMap.set(a.student_id, (pendingMap.get(a.student_id) ?? 0) + 1)
+  })
 
   const students = studentRows.map(s => {
     const att     = attMap.get(s.id)!

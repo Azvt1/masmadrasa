@@ -2,23 +2,43 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { format, parseISO, isAfter, startOfDay } from 'date-fns'
+import Link from 'next/link'
 import AttendanceTabs, { type StudentStat, type SessionRow } from './AttendanceTabs'
 
-export default async function AdminAttendancePage() {
+export default async function AdminAttendancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ term?: string }>
+}) {
   const supabase = await createClient()
   const admin = createAdminClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Active term
-  const { data: term } = await supabase
-    .from('terms')
-    .select('*')
-    .eq('is_active', true)
-    .single()
+  const { term: termParam } = await searchParams
 
-  if (!term) {
+  // All terms + students in parallel
+  const [{ data: allTerms }, { data: studentRows }] = await Promise.all([
+    supabase.from('terms').select('*').order('start_date', { ascending: false }),
+    admin.from('students').select('id, student_type, profile_id, teacher_id').eq('is_active', true),
+  ])
+
+  if (!allTerms || allTerms.length === 0) {
+    return (
+      <div className="space-y-2">
+        <h1 className="text-xl font-semibold text-slate-900">Attendance</h1>
+        <p className="text-sm text-slate-500">No terms found.</p>
+      </div>
+    )
+  }
+
+  const activeTerm   = allTerms.find(t => t.is_active)
+  const selectedTerm = termParam
+    ? allTerms.find(t => t.id === termParam) ?? activeTerm
+    : activeTerm
+
+  if (!selectedTerm) {
     return (
       <div className="space-y-2">
         <h1 className="text-xl font-semibold text-slate-900">Attendance</h1>
@@ -27,36 +47,24 @@ export default async function AdminAttendancePage() {
     )
   }
 
-  // All sessions for this term
-  const { data: allSessions } = await supabase
-    .from('class_sessions')
-    .select('id, session_date, day_of_week')
-    .eq('term_id', term.id)
-    .order('session_date')
-
-  const today = startOfDay(new Date())
-  const pastSessions = (allSessions ?? []).filter(s => !isAfter(parseISO(s.session_date), today))
-  const pastSessionIds = pastSessions.map(s => s.id)
-
-  // Students + profiles via admin client
-  const { data: studentRows } = await admin
-    .from('students')
-    .select('id, student_type, profile_id, teacher_id')
-    .eq('is_active', true)
-
+  // Sessions for selected term + profiles
   const allProfileIds = [
     ...(studentRows ?? []).map(s => s.profile_id),
     ...(studentRows ?? []).map(s => s.teacher_id).filter(Boolean),
   ]
 
-  const { data: profileRows } = await admin
-    .from('profiles')
-    .select('id, full_name')
-    .in('id', allProfileIds)
+  const [{ data: allSessions }, { data: profileRows }] = await Promise.all([
+    supabase.from('class_sessions').select('id, session_date, day_of_week')
+      .eq('term_id', selectedTerm.id).order('session_date'),
+    admin.from('profiles').select('id, full_name').in('id', allProfileIds),
+  ])
 
-  const profileMap = new Map((profileRows ?? []).map(p => [p.id, p.full_name]))
+  const today = startOfDay(new Date())
+  const pastSessions    = (allSessions ?? []).filter(s => !isAfter(parseISO(s.session_date), today))
+  const pastSessionIds  = pastSessions.map(s => s.id)
+  const profileMap      = new Map((profileRows ?? []).map(p => [p.id, p.full_name]))
 
-  // Attendance records for past sessions
+  // Attendance records — only for this term's past sessions
   const { data: records } = pastSessionIds.length > 0
     ? await admin
         .from('attendance_records')
@@ -64,7 +72,7 @@ export default async function AdminAttendancePage() {
         .in('session_id', pastSessionIds)
     : { data: [] }
 
-  // ── Build student stats ───────────────────────────────────────────────────
+  // ── Build student stats ──────────────────────────────────────────────────
   const statsMap = new Map<string, StudentStat>()
   for (const s of studentRows ?? []) {
     statsMap.set(s.id, {
@@ -93,7 +101,7 @@ export default async function AdminAttendancePage() {
     (a, b) => a.attendanceRate - b.attendanceRate
   )
 
-  // ── Build session rows ────────────────────────────────────────────────────
+  // ── Build session rows ───────────────────────────────────────────────────
   type StatusMap = { present: number; late: number; absent: number }
   const sessionStatsMap = new Map<string, StatusMap>()
   for (const r of records ?? []) {
@@ -125,10 +133,32 @@ export default async function AdminAttendancePage() {
       <div>
         <h1 className="text-xl font-semibold text-slate-900">Attendance</h1>
         <p className="text-sm text-slate-500 mt-0.5">
-          {term.name} · {format(parseISO(term.start_date), 'd MMM')} – {format(parseISO(term.end_date), 'd MMM yyyy')}
+          {format(parseISO(selectedTerm.start_date), 'd MMM')} – {format(parseISO(selectedTerm.end_date), 'd MMM yyyy')}
           · {pastSessions.length} of {allSessions?.length ?? 0} sessions completed
         </p>
       </div>
+
+      {/* Term tabs */}
+      {allTerms.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {allTerms.map(t => (
+            <Link
+              key={t.id}
+              href={`/admin/attendance?term=${t.id}`}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                t.id === selectedTerm.id
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {t.name}
+              {t.is_active && t.id !== selectedTerm.id && (
+                <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 inline-block align-middle" />
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <AttendanceTabs
         students={students}
