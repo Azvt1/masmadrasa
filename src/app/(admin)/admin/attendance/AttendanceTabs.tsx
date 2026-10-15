@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { format, parseISO } from 'date-fns'
 import { CheckCircle2, Circle, AlertTriangle } from 'lucide-react'
 
@@ -41,6 +41,20 @@ export default function AttendanceTabs({
   atRiskCount,
 }: Props) {
   const [tab, setTab] = useState<'students' | 'sessions'>('students')
+  const [teacherFilter, setTeacherFilter] = useState<string>('all')
+
+  // Unique teacher names for filter
+  const teachers = useMemo(() => {
+    const names = Array.from(new Set(students.map(s => s.teacherName))).sort()
+    return names
+  }, [students])
+
+  const filteredStudents = useMemo(() =>
+    teacherFilter === 'all' ? students : students.filter(s => s.teacherName === teacherFilter),
+    [students, teacherFilter]
+  )
+
+  const filteredAtRisk = filteredStudents.filter(s => s.attendanceRate < 80).length
 
   // Group sessions by month
   const grouped = new Map<string, SessionRow[]>()
@@ -63,10 +77,10 @@ export default function AttendanceTabs({
           }`}
         >
           Student attendance
-          {atRiskCount > 0 && (
+          {filteredAtRisk > 0 && (
             <span className="ml-2 inline-flex items-center gap-0.5 text-xs font-medium text-red-500 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded-full">
               <AlertTriangle size={10} />
-              {atRiskCount}
+              {filteredAtRisk}
             </span>
           )}
         </button>
@@ -85,6 +99,37 @@ export default function AttendanceTabs({
       {/* Student attendance tab */}
       {tab === 'students' && (
         <>
+          {/* Teacher filter */}
+          {teachers.length > 1 && (
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs text-slate-500 font-medium">Teacher:</span>
+              <div className="flex gap-1.5 flex-wrap">
+                <button
+                  onClick={() => setTeacherFilter('all')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    teacherFilter === 'all'
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  All
+                </button>
+                {teachers.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTeacherFilter(t)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      teacherFilter === t
+                        ? 'bg-teal-600 text-white'
+                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {pastSessionCount === 0 ? (
             <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-500">
               No sessions have taken place yet. Attendance data will appear here once sessions start.
@@ -107,7 +152,7 @@ export default function AttendanceTabs({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {students.map(s => {
+                  {filteredStudents.map(s => {
                     const isAtRisk = s.attendanceRate < 80
                     const isGood   = s.attendanceRate >= 95
                     return (
