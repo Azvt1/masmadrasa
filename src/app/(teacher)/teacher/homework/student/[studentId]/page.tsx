@@ -139,7 +139,7 @@ export default async function StudentHomeworkPage({
                 ? startOfDay(parseISO(hw.due_date)) < today
                 : false
               const upcomingHomework = pending
-                .filter(p => p.id !== a.id)
+                .filter(p => p.id !== a.id && (p.homework as any).due_date && startOfDay(parseISO((p.homework as any).due_date)) > today)
                 .map(p => (p.homework as any).title)
               return (
                 <div key={a.id} className="px-4 py-3">
@@ -206,7 +206,9 @@ export default async function StudentHomeworkPage({
           <div className="bg-white border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100">
             {completed.map(a => {
               const hw = a.homework as any
-              const upcomingHomework = pending.map(p => (p.homework as any).title)
+              const upcomingHomework = pending
+                .filter(p => (p.homework as any).due_date && startOfDay(parseISO((p.homework as any).due_date)) > today)
+                .map(p => (p.homework as any).title)
               return (
                 <div key={a.id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-4">
